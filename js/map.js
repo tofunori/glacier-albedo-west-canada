@@ -1,8 +1,11 @@
 /**
  * Configuration et gestion de la carte
  * Module pour la création de la carte et des couches de données
- * VERSION CORRIGÉE
+ * VERSION CORRIGÉE - Sans double initialisation
  */
+
+// Variable pour éviter la double initialisation
+let layersInitialized = false;
 
 /**
  * Créer la carte et la vue principale
@@ -40,9 +43,11 @@ function createMapAndView() {
                 console.log('✅ Vue initialisée avec succès');
                 showStatus('Carte initialisée avec succès', 'success');
                 
-                // Émettre l'événement viewReady
-                const viewReadyEvent = new CustomEvent('viewReady');
-                document.dispatchEvent(viewReadyEvent);
+                // Émettre l'événement viewReady UNE SEULE FOIS
+                if (!layersInitialized) {
+                    const viewReadyEvent = new CustomEvent('viewReady');
+                    document.dispatchEvent(viewReadyEvent);
+                }
                 
             }).catch(error => {
                 handleError(error, 'Initialisation de la vue');
@@ -58,6 +63,12 @@ function createMapAndView() {
  * Ajouter les couches de données - VERSION CORRIGÉE
  */
 function addDataLayers() {
+    // Éviter la double initialisation
+    if (layersInitialized) {
+        console.log('⚠️ Couches déjà initialisées, abandon');
+        return;
+    }
+    
     require([
         'esri/layers/FeatureLayer',
         'esri/layers/GraphicsLayer',
@@ -66,21 +77,7 @@ function addDataLayers() {
     ], function(FeatureLayer, GraphicsLayer, SimpleRenderer, PopupTemplate) {
         
         try {
-            let layersToLoad = 0;
-            let layersLoaded = 0;
-            
-            // Fonction pour vérifier si toutes les couches sont chargées
-            function checkAllLayersLoaded() {
-                layersLoaded++;
-                console.log(`Couches chargées: ${layersLoaded}/${layersToLoad}`);
-                
-                if (layersLoaded >= layersToLoad) {
-                    console.log('✅ Toutes les couches ont été ajoutées');
-                    // Émettre l'événement layersAdded
-                    const layersAddedEvent = new CustomEvent('layersAdded');
-                    document.dispatchEvent(layersAddedEvent);
-                }
-            }
+            console.log('🌍 Début du chargement des couches...');
             
             // Couche pour la localisation de l'utilisateur
             userLocationLayer = new GraphicsLayer({
@@ -90,13 +87,10 @@ function addDataLayers() {
             
             // Ajouter d'abord la couche utilisateur
             map.add(userLocationLayer);
-            layersToLoad++; // Cette couche compte comme "chargée" immédiatement
-            checkAllLayersLoaded();
+            console.log('✅ Couche de localisation ajoutée');
             
             // Vérifier si l'URL des glaciers est disponible
             if (CONFIG.services.glaciers) {
-                layersToLoad++;
-                
                 console.log('📡 Tentative de connexion aux glaciers RGI...');
                 console.log('URL:', CONFIG.services.glaciers);
                 
@@ -179,12 +173,20 @@ function addDataLayers() {
                         console.warn('⚠️ Test de requête échoué:', error);
                     });
                     
-                    checkAllLayersLoaded();
+                    // Marquer les couches comme initialisées et émettre l'événement
+                    layersInitialized = true;
+                    console.log('✅ Toutes les couches ont été chargées');
+                    const layersAddedEvent = new CustomEvent('layersAdded');
+                    document.dispatchEvent(layersAddedEvent);
                     
                 }).catch(error => {
                     console.error('❌ Erreur chargement glaciers:', error);
                     handleError(error, 'Chargement des glaciers RGI');
-                    checkAllLayersLoaded(); // Compter même les échecs pour éviter de bloquer
+                    
+                    // Même en cas d'échec, marquer comme initialisé pour éviter la boucle
+                    layersInitialized = true;
+                    const layersAddedEvent = new CustomEvent('layersAdded');
+                    document.dispatchEvent(layersAddedEvent);
                 });
                 
                 showStatus('Couche des glaciers en cours de chargement...', 'info');
@@ -192,6 +194,11 @@ function addDataLayers() {
             } else {
                 console.warn('⚠️ URL du service glaciers non configurée');
                 showStatus('Service glaciers non configuré', 'warning');
+                
+                // Marquer quand même comme initialisé
+                layersInitialized = true;
+                const layersAddedEvent = new CustomEvent('layersAdded');
+                document.dispatchEvent(layersAddedEvent);
             }
             
             // Service d'albédo temporairement désactivé
@@ -201,6 +208,7 @@ function addDataLayers() {
         } catch (error) {
             handleError(error, 'Ajout des couches de données');
             // Émettre quand même l'événement pour éviter de bloquer l'app
+            layersInitialized = true;
             const layersAddedEvent = new CustomEvent('layersAdded');
             document.dispatchEvent(layersAddedEvent);
         }
