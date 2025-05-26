@@ -66,35 +66,51 @@ let currentQuery = null;
 let initialViewpoint;
 
 /**
- * Initialisation de l'application
+ * Initialisation de l'application - VERSION CORRIGÉE
  */
 function initializeApp() {
     console.log('Initialisation de l\'application d\'albédo des glaciers...');
     
-    // Créer la carte et la vue
-    createMapAndView();
-    
-    // Ajouter les couches de données
-    addDataLayers();
-    
-    // Initialiser les widgets après un délai
-    setTimeout(() => {
-        initializeWidgets();
-    }, 2000);
-    
-    // Configurer les événements
-    setTimeout(() => {
-        setupEventListeners();
-    }, 3000);
-    
-    console.log('Application initialisée avec succès!');
+    try {
+        // Créer la carte et la vue
+        createMapAndView();
+        
+        // Attendre que la vue soit prête avant de continuer
+        // CORRECTION: Utiliser un système d'événements au lieu de setTimeout
+        document.addEventListener('viewReady', function() {
+            console.log('Vue prête, ajout des couches...');
+            addDataLayers();
+            
+            // Initialiser les widgets après que les couches soient ajoutées
+            document.addEventListener('layersAdded', function() {
+                console.log('Couches ajoutées, initialisation des widgets...');
+                initializeWidgets();
+                setupEventListeners();
+            });
+        });
+        
+    } catch (error) {
+        handleError(error, 'Initialisation');
+    }
 }
 
 /**
- * Gestion des erreurs
+ * Gestion des erreurs - VERSION AMÉLIORÉE
  */
 function handleError(error, context = 'Application') {
     console.error(`Erreur dans ${context}:`, error);
+    
+    // Vérifier les erreurs courantes et proposer des solutions
+    let errorMessage = error.message || 'Une erreur est survenue';
+    let solution = '';
+    
+    if (error.message && error.message.includes('YOUR_ORG')) {
+        solution = 'Vérifiez que vous utilisez la dernière version du code avec les bonnes URLs de services.';
+    } else if (error.message && error.message.includes('CORS')) {
+        solution = 'Problème d\'accès au service. Vérifiez la configuration ArcGIS Online.';
+    } else if (error.message && error.message.includes('Cannot read properties of undefined')) {
+        solution = 'Problème de timing dans l\'initialisation. Rechargez la page.';
+    }
     
     // Afficher un message à l'utilisateur
     const errorDiv = document.createElement('div');
@@ -108,21 +124,24 @@ function handleError(error, context = 'Application') {
         border-radius: 6px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         z-index: 1000;
-        max-width: 300px;
+        max-width: 350px;
+        font-size: 14px;
     `;
     errorDiv.innerHTML = `
-        <strong>Erreur:</strong> ${error.message || 'Une erreur est survenue'}<br>
+        <strong>Erreur:</strong> ${errorMessage}<br>
         <small>Contexte: ${context}</small>
+        ${solution ? `<br><br><strong>Solution:</strong> ${solution}` : ''}
+        <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; color: white; cursor: pointer; font-size: 16px;">×</button>
     `;
     
     document.body.appendChild(errorDiv);
     
-    // Supprimer le message après 5 secondes
+    // Supprimer le message après 8 secondes
     setTimeout(() => {
         if (errorDiv.parentNode) {
             errorDiv.parentNode.removeChild(errorDiv);
         }
-    }, 5000);
+    }, 8000);
 }
 
 /**
@@ -172,6 +191,7 @@ function showStatus(message, type = 'info') {
  */
 document.addEventListener('DOMContentLoaded', () => {
     try {
+        console.log('DOM chargé, démarrage de l\'application...');
         initializeApp();
     } catch (error) {
         handleError(error, 'Initialisation');
