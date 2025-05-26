@@ -62,19 +62,19 @@ function addDataLayers() {
             // Couche des glaciers (polygones RGI)
             glacierLayer = new FeatureLayer({
                 url: CONFIG.services.glaciers,
-                title: 'Glaciers de l\'Ouest Canadien (RGI)',
+                title: 'Glaciers de l\'Ouest Canadien (RGI v7.0)',
                 renderer: new SimpleRenderer({
                     symbol: CONFIG.symbols.glacier
                 }),
                 popupTemplate: new PopupTemplate({
-                    title: 'Glacier: {RGIId}',
+                    title: 'Glacier: {rgiid}',
                     content: `
                         <div class="popup-content">
-                            <p><strong>Nom:</strong> {Name}</p>
-                            <p><strong>Superficie:</strong> {Area} km²</p>
-                            <p><strong>Élévation moyenne:</strong> {Zmed} m</p>
-                            <p><strong>Région RGI:</strong> {O1Region}</p>
-                            <p><strong>Sous-région:</strong> {O2Region}</p>
+                            <p><strong>ID RGI:</strong> {rgiid}</p>
+                            <p><strong>Nom:</strong> {name}</p>
+                            <p><strong>Superficie:</strong> {area_km2} km²</p>
+                            <p><strong>Élévation médiane:</strong> {zmed} m</p>
+                            <p><strong>Région:</strong> {o1region} - {o2region}</p>
                         </div>
                     `
                 }),
@@ -82,6 +82,43 @@ function addDataLayers() {
                 opacity: 0.8
             });
             
+            // Couche pour la localisation de l'utilisateur
+            userLocationLayer = new GraphicsLayer({
+                title: 'Ma localisation',
+                visible: true
+            });
+            
+            // Ajouter seulement les glaciers pour l'instant (albédo sera ajouté plus tard)
+            map.addMany([glacierLayer, userLocationLayer]);
+            
+            showStatus('Couche des glaciers ajoutée', 'success');
+            
+            // Tester l'accès aux données
+            glacierLayer.when(() => {
+                console.log('Couche glaciers chargée avec succès');
+                showStatus('Glaciers RGI chargés avec succès!', 'success');
+            }).catch(error => {
+                console.error('Erreur chargement glaciers:', error);
+                handleError(error, 'Chargement des glaciers RGI');
+            });
+            
+        } catch (error) {
+            handleError(error, 'Ajout des couches de données');
+        }
+    });
+}
+
+/**
+ * Ajouter la couche d'albédo (à appeler après publication du service)
+ */
+function addAlbedoLayer() {
+    require([
+        'esri/layers/FeatureLayer',
+        'esri/renderers/SimpleRenderer',
+        'esri/PopupTemplate'
+    ], function(FeatureLayer, SimpleRenderer, PopupTemplate) {
+        
+        try {
             // Couche des points d'albédo
             albedoLayer = new FeatureLayer({
                 url: CONFIG.services.albedoPoints,
@@ -117,19 +154,13 @@ function addDataLayers() {
                 visible: true
             });
             
-            // Couche pour la localisation de l'utilisateur
-            userLocationLayer = new GraphicsLayer({
-                title: 'Ma localisation',
-                visible: true
-            });
+            // Ajouter la couche d'albédo à la carte
+            map.add(albedoLayer);
             
-            // Ajouter les couches à la carte
-            map.addMany([glacierLayer, albedoLayer, userLocationLayer]);
-            
-            showStatus('Couches de données ajoutées', 'success');
+            showStatus('Points d\'albédo ajoutés', 'success');
             
         } catch (error) {
-            handleError(error, 'Ajout des couches de données');
+            handleError(error, 'Ajout de la couche d\'albédo');
         }
     });
 }
