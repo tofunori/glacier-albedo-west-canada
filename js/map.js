@@ -1,6 +1,7 @@
 /**
  * Configuration et gestion de la carte
  * Module pour la création de la carte et des couches de données
+ * VERSION CORRIGÉE
  */
 
 /**
@@ -33,10 +34,16 @@ function createMapAndView() {
                 }
             });
             
-            // Sauvegarder la vue initiale
+            // CORRECTION: Émettre un événement quand la vue est prête
             view.when(() => {
                 initialViewpoint = view.viewpoint.clone();
+                console.log('✅ Vue initialisée avec succès');
                 showStatus('Carte initialisée avec succès', 'success');
+                
+                // Émettre l'événement viewReady
+                const viewReadyEvent = new CustomEvent('viewReady');
+                document.dispatchEvent(viewReadyEvent);
+                
             }).catch(error => {
                 handleError(error, 'Initialisation de la vue');
             });
@@ -48,7 +55,7 @@ function createMapAndView() {
 }
 
 /**
- * Ajouter les couches de données
+ * Ajouter les couches de données - VERSION CORRIGÉE
  */
 function addDataLayers() {
     require([
@@ -59,6 +66,22 @@ function addDataLayers() {
     ], function(FeatureLayer, GraphicsLayer, SimpleRenderer, PopupTemplate) {
         
         try {
+            let layersToLoad = 0;
+            let layersLoaded = 0;
+            
+            // Fonction pour vérifier si toutes les couches sont chargées
+            function checkAllLayersLoaded() {
+                layersLoaded++;
+                console.log(`Couches chargées: ${layersLoaded}/${layersToLoad}`);
+                
+                if (layersLoaded >= layersToLoad) {
+                    console.log('✅ Toutes les couches ont été ajoutées');
+                    // Émettre l'événement layersAdded
+                    const layersAddedEvent = new CustomEvent('layersAdded');
+                    document.dispatchEvent(layersAddedEvent);
+                }
+            }
+            
             // Couche pour la localisation de l'utilisateur
             userLocationLayer = new GraphicsLayer({
                 title: 'Ma localisation',
@@ -67,9 +90,16 @@ function addDataLayers() {
             
             // Ajouter d'abord la couche utilisateur
             map.add(userLocationLayer);
+            layersToLoad++; // Cette couche compte comme "chargée" immédiatement
+            checkAllLayersLoaded();
             
             // Vérifier si l'URL des glaciers est disponible
             if (CONFIG.services.glaciers) {
+                layersToLoad++;
+                
+                console.log('📡 Tentative de connexion aux glaciers RGI...');
+                console.log('URL:', CONFIG.services.glaciers);
+                
                 // Couche des glaciers (polygones RGI) avec popup générique
                 glacierLayer = new FeatureLayer({
                     url: CONFIG.services.glaciers,
@@ -129,6 +159,8 @@ function addDataLayers() {
                         console.log('📊 Étendue des glaciers:', response.extent);
                         console.log('📊 Nombre d\'entités estimées:', response.count);
                         showStatus(`${response.count} glaciers détectés`, 'info');
+                    }).catch(error => {
+                        console.warn('⚠️ Impossible d\'obtenir l\'étendue:', error);
                     });
                     
                     // Tester une requête simple
@@ -143,24 +175,34 @@ function addDataLayers() {
                             console.log('🧪 Premier glacier:', response.features[0].attributes);
                             console.log('🧪 Champs disponibles:', Object.keys(response.features[0].attributes));
                         }
+                    }).catch(error => {
+                        console.warn('⚠️ Test de requête échoué:', error);
                     });
+                    
+                    checkAllLayersLoaded();
                     
                 }).catch(error => {
                     console.error('❌ Erreur chargement glaciers:', error);
                     handleError(error, 'Chargement des glaciers RGI');
+                    checkAllLayersLoaded(); // Compter même les échecs pour éviter de bloquer
                 });
                 
-                showStatus('Couche des glaciers ajoutée', 'success');
+                showStatus('Couche des glaciers en cours de chargement...', 'info');
+                
             } else {
                 console.warn('⚠️ URL du service glaciers non configurée');
                 showStatus('Service glaciers non configuré', 'warning');
             }
             
-            // Ne pas charger l'albédo pour l'instant
+            // Service d'albédo temporairement désactivé
             console.log('ℹ️ Service d\'albédo sera ajouté après publication');
+            showStatus('Service d\'albédo non encore disponible', 'warning');
             
         } catch (error) {
             handleError(error, 'Ajout des couches de données');
+            // Émettre quand même l'événement pour éviter de bloquer l'app
+            const layersAddedEvent = new CustomEvent('layersAdded');
+            document.dispatchEvent(layersAddedEvent);
         }
     });
 }
@@ -171,6 +213,7 @@ function addDataLayers() {
 function addAlbedoLayer() {
     if (!CONFIG.services.albedoPoints) {
         console.warn('⚠️ URL du service d\'albédo non configurée');
+        showStatus('Service d\'albédo non encore publié', 'warning');
         return;
     }
 
