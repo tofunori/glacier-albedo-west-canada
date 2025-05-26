@@ -12,10 +12,10 @@ require([
 
 // Configuration globale de l'application
 const CONFIG = {
-    // URLs des services ArcGIS Online - CORRIGÉES
+    // URLs des services ArcGIS Online
     services: {
         glaciers: 'https://services3.arcgis.com/F77upWE9kmPKRMqm/arcgis/rest/services/Glaciers_RGI_West_Canada/FeatureServer/0',
-        albedoPoints: null // Sera ajouté après publication du CSV d'albédo
+        albedoPoints: null // Sera configuré après publication du service d'albédo
     },
     
     // Étendue initiale (Ouest canadien)
@@ -77,14 +77,17 @@ function initializeApp() {
     // Ajouter les couches de données
     addDataLayers();
     
-    // Initialiser les widgets APRÈS que la vue soit prête
-    view.when(() => {
+    // Initialiser les widgets après un délai
+    setTimeout(() => {
         initializeWidgets();
+    }, 2000);
+    
+    // Configurer les événements
+    setTimeout(() => {
         setupEventListeners();
-        console.log('Application initialisée avec succès!');
-    }).catch(error => {
-        handleError(error, 'Initialisation de la vue');
-    });
+    }, 3000);
+    
+    console.log('Application initialisée avec succès!');
 }
 
 /**
