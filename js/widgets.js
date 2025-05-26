@@ -1,34 +1,40 @@
 /**
  * Configuration et gestion des widgets
  * Module pour les contrôles d'interface utilisateur
+ * VERSION CORRIGÉE
  */
 
 /**
- * Initialiser tous les widgets
+ * Initialiser tous les widgets - VERSION CORRIGÉE
  */
 function initializeWidgets() {
-    // Attendre que la vue soit prête avant d'initialiser les widgets
-    if (view && view.ready) {
-        createBasemapGallery();
-        createLayerList();
-        createScaleBar();
-        setupQueryControls();
-    } else if (view) {
-        // Si la vue existe mais n'est pas prête, attendre qu'elle le soit
-        view.when(() => {
+    console.log('Début de l\'initialisation des widgets...');
+    
+    // CORRECTION: Vérifier que view existe et est prêt avant de continuer
+    if (!view) {
+        console.warn('⚠️ Vue non disponible, report de l\'initialisation des widgets');
+        setTimeout(initializeWidgets, 1000);
+        return;
+    }
+    
+    // Attendre que la vue soit complètement prête
+    view.when(() => {
+        console.log('✅ Vue prête, création des widgets...');
+        
+        try {
             createBasemapGallery();
             createLayerList();
             createScaleBar();
             setupQueryControls();
-        }).catch(error => {
+            console.log('✅ Tous les widgets ont été initialisés');
+        } catch (error) {
             handleError(error, 'Initialisation des widgets');
-        });
-    } else {
-        // Si la vue n'existe pas encore, réessayer dans 1 seconde
-        setTimeout(() => {
-            initializeWidgets();
-        }, 1000);
-    }
+        }
+        
+    }).catch(error => {
+        console.error('❌ Erreur lors de l\'attente de la vue:', error);
+        handleError(error, 'Initialisation des widgets - Attente de la vue');
+    });
 }
 
 /**
@@ -45,7 +51,7 @@ function createBasemapGallery() {
                 container: 'basemap-gallery'
             });
             
-            console.log('Widget de fond de carte créé');
+            console.log('✅ Widget de fond de carte créé');
             
         } catch (error) {
             handleError(error, 'Création du widget de fond de carte');
@@ -103,7 +109,7 @@ function createLayerList() {
                 }
             });
             
-            console.log('Widget de liste des couches créé');
+            console.log('✅ Widget de liste des couches créé');
             
         } catch (error) {
             handleError(error, 'Création du widget de liste des couches');
@@ -126,7 +132,7 @@ function createScaleBar() {
                 unit: 'metric'
             });
             
-            console.log('Barre d\'échelle créée');
+            console.log('✅ Barre d\'échelle créée');
             
         } catch (error) {
             handleError(error, 'Création de la barre d\'échelle');
@@ -172,7 +178,7 @@ function setupQueryControls() {
             });
         }
         
-        console.log('Contrôles de requête configurés');
+        console.log('✅ Contrôles de requête configurés');
         
     } catch (error) {
         handleError(error, 'Configuration des contrôles de requête');
@@ -342,7 +348,7 @@ function setupEventListeners() {
             locateButton.addEventListener('click', locateUser);
         }
         
-        console.log('Événements configurés');
+        console.log('✅ Événements configurés');
         
     } catch (error) {
         handleError(error, 'Configuration des événements');
