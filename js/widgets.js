@@ -22,7 +22,7 @@ function initializeWidgets() {
         console.log('✅ Vue prête, création des widgets...');
         
         try {
-            createBasemapGallery();
+            createBasemapSelector(); // Version compacte
             createLayerList();
             createScaleBar();
             setupQueryControls();
@@ -38,23 +38,123 @@ function initializeWidgets() {
 }
 
 /**
- * Créer le widget de galerie de fonds de carte
+ * Créer un sélecteur de fond de carte compact - NOUVELLE VERSION
  */
-function createBasemapGallery() {
+function createBasemapSelector() {
+    try {
+        // Liste des fonds de carte principaux pour les glaciers
+        const basemaps = [
+            { id: 'satellite', name: 'Satellite', description: 'Vue satellite (recommandé pour glaciers)' },
+            { id: 'hybrid', name: 'Hybride', description: 'Satellite avec étiquettes' },
+            { id: 'topo-vector', name: 'Topographique', description: 'Carte topographique' },
+            { id: 'gray-vector', name: 'Gris', description: 'Fond neutre' },
+            { id: 'streets-vector', name: 'Rues', description: 'Carte routière' },
+            { id: 'terrain', name: 'Terrain', description: 'Relief et élévation' }
+        ];
+        
+        // Créer le conteneur HTML pour le sélecteur compact
+        const container = document.getElementById('basemap-gallery');
+        container.innerHTML = `
+            <div class="basemap-selector-compact">
+                <label for="basemap-select">Choisir le fond :</label>
+                <select id="basemap-select" class="basemap-dropdown">
+                    ${basemaps.map(bm => 
+                        `<option value="${bm.id}" ${bm.id === 'satellite' ? 'selected' : ''}>
+                            ${bm.name}
+                        </option>`
+                    ).join('')}
+                </select>
+                <div class="basemap-info" id="basemap-info">
+                    Vue satellite (recommandé pour glaciers)
+                </div>
+            </div>
+        `;
+        
+        // Ajouter les styles CSS inline si pas dans le fichier CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            .basemap-selector-compact {
+                padding: 0.5rem;
+            }
+            
+            .basemap-selector-compact label {
+                display: block;
+                font-size: 0.9rem;
+                font-weight: 500;
+                margin-bottom: 0.3rem;
+                color: #2c5aa0;
+            }
+            
+            .basemap-dropdown {
+                width: 100%;
+                padding: 0.4rem;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 0.9rem;
+                background: white;
+                cursor: pointer;
+            }
+            
+            .basemap-dropdown:focus {
+                outline: none;
+                border-color: #2c5aa0;
+                box-shadow: 0 0 0 2px rgba(44, 90, 160, 0.2);
+            }
+            
+            .basemap-info {
+                font-size: 0.8rem;
+                color: #666;
+                margin-top: 0.3rem;
+                font-style: italic;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Gérer le changement de fond de carte
+        const selectElement = document.getElementById('basemap-select');
+        const infoElement = document.getElementById('basemap-info');
+        
+        selectElement.addEventListener('change', function() {
+            const selectedBasemap = this.value;
+            const selectedInfo = basemaps.find(bm => bm.id === selectedBasemap);
+            
+            // Changer le fond de carte
+            map.basemap = selectedBasemap;
+            
+            // Mettre à jour l'info
+            if (selectedInfo && infoElement) {
+                infoElement.textContent = selectedInfo.description;
+            }
+            
+            showStatus(`Fond de carte changé: ${selectedInfo ? selectedInfo.name : selectedBasemap}`, 'info');
+        });
+        
+        console.log('✅ Sélecteur de fond de carte compact créé');
+        
+    } catch (error) {
+        handleError(error, 'Création du sélecteur de fond de carte');
+    }
+}
+
+/**
+ * Alternative: Créer un toggle simple entre 2 cartes principales
+ */
+function createBasemapToggle() {
     require([
-        'esri/widgets/BasemapGallery'
-    ], function(BasemapGallery) {
+        'esri/widgets/BasemapToggle'
+    ], function(BasemapToggle) {
         
         try {
-            basemapGallery = new BasemapGallery({
+            basemapToggle = new BasemapToggle({
                 view: view,
+                nextBasemap: 'hybrid', // Alterne entre satellite et hybride
                 container: 'basemap-gallery'
             });
             
-            console.log('✅ Widget de fond de carte créé');
+            console.log('✅ Toggle de fond de carte créé');
             
         } catch (error) {
-            handleError(error, 'Création du widget de fond de carte');
+            handleError(error, 'Création du toggle de fond de carte');
         }
     });
 }
