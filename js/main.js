@@ -12,10 +12,10 @@ require([
 
 // Configuration globale de l'application
 const CONFIG = {
-    // URLs des services ArcGIS Online (À METTRE À JOUR après publication)
+    // URLs des services ArcGIS Online
     services: {
-        glaciers: 'https://services.arcgis.com/YOUR_ORG/arcgis/rest/services/RGI_West_Canada_Glaciers/FeatureServer/0',
-        albedoPoints: 'https://services.arcgis.com/YOUR_ORG/arcgis/rest/services/Glacier_Albedo_Points/FeatureServer/0'
+        glaciers: 'https://services3.arcgis.com/F77upWE9kmPKRMqm/arcgis/rest/services/Glaciers_RGI_West_Canada/FeatureServer/0',
+        albedoPoints: 'https://services3.arcgis.com/F77upWE9kmPKRMqm/arcgis/rest/services/YOUR_ALBEDO_SERVICE/FeatureServer/0'
     },
     
     // Étendue initiale (Ouest canadien)
