@@ -3,12 +3,19 @@
  * Projet GEO1137 - UQTR 2025
  */
 
+// Configuration de l'API key ArcGIS
+require([
+    "esri/config"
+], function(esriConfig) {
+    esriConfig.apiKey = "AAPTxy8BH1VEsoebNVZXo8HurCjwZsq9jQZb7TBugZv8WkBF7nR_bak-1O6VkLL5-SS45ijLkvFccSjWO5g1T3GHQ5V0Y-sKHwBYO3-N6VAnnDAj8YheABwcPWWbNbJS4gCbTgGRqGH7NNKogLiNvhWyxvPFXamEP_Lxb2xmggxtGJhMUDxHIez3YJVeSrrCl8bzQ6vfTR0qoNN47wZsWFKWkswTtm4esH2cCDFdGd4uZJPsJVFVR-JoKwdkkxeAY7IuAT1_BijKPAft";
+});
+
 // Configuration globale de l'application
 const CONFIG = {
-    // URLs des services ArcGIS Online (à remplacer par vos propres services)
+    // URLs des services ArcGIS Online (À METTRE À JOUR après publication)
     services: {
-        glaciers: 'https://services.arcgis.com/YOUR_ORG/arcgis/rest/services/RGI_West_Canada/FeatureServer/0',
-        albedoPoints: 'https://services.arcgis.com/YOUR_ORG/arcgis/rest/services/Albedo_Points/FeatureServer/0'
+        glaciers: 'https://services.arcgis.com/YOUR_ORG/arcgis/rest/services/RGI_West_Canada_Glaciers/FeatureServer/0',
+        albedoPoints: 'https://services.arcgis.com/YOUR_ORG/arcgis/rest/services/Glacier_Albedo_Points/FeatureServer/0'
     },
     
     // Étendue initiale (Ouest canadien)
