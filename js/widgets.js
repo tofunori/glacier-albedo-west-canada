@@ -7,15 +7,28 @@
  * Initialiser tous les widgets
  */
 function initializeWidgets() {
-    // Attendre que la vue soit prête
-    view.when(() => {
+    // Attendre que la vue soit prête avant d'initialiser les widgets
+    if (view && view.ready) {
         createBasemapGallery();
         createLayerList();
         createScaleBar();
         setupQueryControls();
-    }).catch(error => {
-        handleError(error, 'Initialisation des widgets');
-    });
+    } else if (view) {
+        // Si la vue existe mais n'est pas prête, attendre qu'elle le soit
+        view.when(() => {
+            createBasemapGallery();
+            createLayerList();
+            createScaleBar();
+            setupQueryControls();
+        }).catch(error => {
+            handleError(error, 'Initialisation des widgets');
+        });
+    } else {
+        // Si la vue n'existe pas encore, réessayer dans 1 seconde
+        setTimeout(() => {
+            initializeWidgets();
+        }, 1000);
+    }
 }
 
 /**
@@ -80,7 +93,9 @@ function createLayerList() {
                 
                 switch (action.id) {
                     case 'full-extent':
-                        view.goTo(item.layer.fullExtent);
+                        if (item.layer.fullExtent) {
+                            view.goTo(item.layer.fullExtent);
+                        }
                         break;
                     case 'information':
                         showLayerInformation(item.layer);
@@ -131,21 +146,31 @@ function setupQueryControls() {
         const clearButton = document.getElementById('clear-query');
         
         // Mettre à jour l'affichage de la valeur d'albédo
-        albedoRange.addEventListener('input', function() {
-            albedoValue.textContent = parseFloat(this.value).toFixed(2);
-        });
+        if (albedoRange && albedoValue) {
+            albedoRange.addEventListener('input', function() {
+                albedoValue.textContent = parseFloat(this.value).toFixed(2);
+            });
+        }
         
-        // Appliquer la requête
-        applyButton.addEventListener('click', function() {
-            const albedoThreshold = parseFloat(albedoRange.value);
-            const selectedYear = yearSelect.value;
-            applyAlbedoQuery(albedoThreshold, selectedYear);
-        });
+        // Appliquer la requête (sera activé quand albédo sera publié)
+        if (applyButton) {
+            applyButton.addEventListener('click', function() {
+                if (albedoLayer) {
+                    const albedoThreshold = parseFloat(albedoRange.value);
+                    const selectedYear = yearSelect.value;
+                    applyAlbedoQuery(albedoThreshold, selectedYear);
+                } else {
+                    showStatus('Points d\'albédo non encore disponibles', 'warning');
+                }
+            });
+        }
         
         // Effacer la requête
-        clearButton.addEventListener('click', function() {
-            clearQuery();
-        });
+        if (clearButton) {
+            clearButton.addEventListener('click', function() {
+                clearQuery();
+            });
+        }
         
         console.log('Contrôles de requête configurés');
         
@@ -158,6 +183,11 @@ function setupQueryControls() {
  * Appliquer une requête d'albédo
  */
 function applyAlbedoQuery(threshold, year) {
+    if (!albedoLayer) {
+        showStatus('Couche d\'albédo non disponible', 'warning');
+        return;
+    }
+
     try {
         let whereClause = '';
         
@@ -171,9 +201,6 @@ function applyAlbedoQuery(threshold, year) {
         
         // Appliquer le filtre à la couche des points d'albédo
         albedoLayer.definitionExpression = whereClause;
-        
-        // Optionnel: filtrer aussi les glaciers correspondants
-        // glacierLayer.definitionExpression = whereClause;
         
         showStatus(`Requête appliquée: albédo ≤ ${threshold} (${year === 'all' ? 'toutes années' : year})`, 'success');
         
@@ -193,14 +220,22 @@ function applyAlbedoQuery(threshold, year) {
  */
 function clearQuery() {
     try {
-        // Supprimer les filtres
-        albedoLayer.definitionExpression = null;
-        glacierLayer.definitionExpression = null;
+        // Supprimer les filtres s'ils existent
+        if (albedoLayer) {
+            albedoLayer.definitionExpression = null;
+        }
+        if (glacierLayer) {
+            glacierLayer.definitionExpression = null;
+        }
         
         // Réinitialiser les contrôles
-        document.getElementById('albedo-range').value = 0.5;
-        document.getElementById('albedo-value').textContent = '0.50';
-        document.getElementById('year-select').value = 'all';
+        const albedoRange = document.getElementById('albedo-range');
+        const albedoValue = document.getElementById('albedo-value');
+        const yearSelect = document.getElementById('year-select');
+        
+        if (albedoRange) albedoRange.value = 0.5;
+        if (albedoValue) albedoValue.textContent = '0.50';
+        if (yearSelect) yearSelect.value = 'all';
         
         currentQuery = null;
         
@@ -216,12 +251,12 @@ function clearQuery() {
  */
 function showLayerInformation(layer) {
     const info = {
-        'Glaciers RGI': {
-            description: 'Inventaire des glaciers de l\'ouest canadien basé sur les données RGI (Randolph Glacier Inventory)',
+        'Glaciers de l\'Ouest Canadien (RGI v7.0)': {
+            description: 'Inventaire des glaciers de l\'ouest canadien basé sur les données RGI v7.0 (Randolph Glacier Inventory)',
             source: 'GLIMS/RGI Consortium',
             fields: ['RGIId', 'Name', 'Area', 'Zmed', 'O1Region', 'O2Region']
         },
-        'Points d\'albédo': {
+        'Points de mesure d\'albédo': {
             description: 'Points de mesure d\'albédo basés sur les données MODIS MCD43A3 (2014-2024)',
             source: 'NASA Earthdata - MODIS',
             fields: ['GlacierName', 'AlbedoMean', 'AlbedoChange', 'Trend', 'Albedo2014-2024']
@@ -261,7 +296,7 @@ function showLayerInformation(layer) {
     infoDiv.innerHTML = `
         ${message}
         <br><br>
-        <button onclick="this.parentElement.remove()" 
+        <button onclick="this.parentElement.remove(); document.querySelector('.info-overlay').remove();" 
                 style="background: #2c5aa0; color: white; border: none; 
                        padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
             Fermer
@@ -270,6 +305,7 @@ function showLayerInformation(layer) {
     
     // Overlay semi-transparent
     const overlay = document.createElement('div');
+    overlay.className = 'info-overlay';
     overlay.style.cssText = `
         position: fixed;
         top: 0;
@@ -295,10 +331,16 @@ function showLayerInformation(layer) {
 function setupEventListeners() {
     try {
         // Bouton retour à la vue initiale
-        document.getElementById('home-button').addEventListener('click', goToInitialView);
+        const homeButton = document.getElementById('home-button');
+        if (homeButton) {
+            homeButton.addEventListener('click', goToInitialView);
+        }
         
         // Bouton de géolocalisation
-        document.getElementById('locate-button').addEventListener('click', locateUser);
+        const locateButton = document.getElementById('locate-button');
+        if (locateButton) {
+            locateButton.addEventListener('click', locateUser);
+        }
         
         console.log('Événements configurés');
         
