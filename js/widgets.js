@@ -1,14 +1,23 @@
 /**
  * Configuration et gestion des widgets
  * Module pour les contrôles d'interface utilisateur
- * VERSION CORRIGÉE
+ * VERSION CORRIGÉE - Sans conflit
  */
+
+// Variable pour éviter la double initialisation
+let widgetsInitialized = false;
 
 /**
  * Initialiser tous les widgets - VERSION CORRIGÉE
  */
 function initializeWidgets() {
     console.log('Début de l\'initialisation des widgets...');
+    
+    // Éviter la double initialisation
+    if (widgetsInitialized) {
+        console.log('⚠️ Widgets déjà initialisés, abandon');
+        return;
+    }
     
     // CORRECTION: Vérifier que view existe et est prêt avant de continuer
     if (!view) {
@@ -22,10 +31,12 @@ function initializeWidgets() {
         console.log('✅ Vue prête, création des widgets...');
         
         try {
-            createBasemapSelector(); // Version compacte
+            createBasemapSelector(); // Version compacte uniquement
             createLayerList();
             createScaleBar();
             setupQueryControls();
+            
+            widgetsInitialized = true; // Marquer comme initialisé
             console.log('✅ Tous les widgets ont été initialisés');
         } catch (error) {
             handleError(error, 'Initialisation des widgets');
@@ -38,10 +49,12 @@ function initializeWidgets() {
 }
 
 /**
- * Créer un sélecteur de fond de carte compact - NOUVELLE VERSION
+ * Créer un sélecteur de fond de carte compact - VERSION FINALE
  */
 function createBasemapSelector() {
     try {
+        console.log('🎨 Création du sélecteur de fond de carte compact...');
+        
         // Liste des fonds de carte principaux pour les glaciers
         const basemaps = [
             { id: 'satellite', name: 'Satellite', description: 'Vue satellite (recommandé pour glaciers)' },
@@ -52,8 +65,18 @@ function createBasemapSelector() {
             { id: 'terrain', name: 'Terrain', description: 'Relief et élévation' }
         ];
         
-        // Créer le conteneur HTML pour le sélecteur compact
+        // Nettoyer le conteneur existant
         const container = document.getElementById('basemap-gallery');
+        if (!container) {
+            console.warn('⚠️ Conteneur basemap-gallery non trouvé');
+            return;
+        }
+        
+        // Vider complètement le conteneur
+        container.innerHTML = '';
+        container.className = ''; // Supprimer les classes ArcGIS
+        
+        // Créer le HTML pour le sélecteur compact
         container.innerHTML = `
             <div class="basemap-selector-compact">
                 <label for="basemap-select">Choisir le fond :</label>
@@ -70,93 +93,86 @@ function createBasemapSelector() {
             </div>
         `;
         
-        // Ajouter les styles CSS inline si pas dans le fichier CSS
-        const style = document.createElement('style');
-        style.textContent = `
-            .basemap-selector-compact {
-                padding: 0.5rem;
-            }
-            
-            .basemap-selector-compact label {
-                display: block;
-                font-size: 0.9rem;
-                font-weight: 500;
-                margin-bottom: 0.3rem;
-                color: #2c5aa0;
-            }
-            
-            .basemap-dropdown {
-                width: 100%;
-                padding: 0.4rem;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-size: 0.9rem;
-                background: white;
-                cursor: pointer;
-            }
-            
-            .basemap-dropdown:focus {
-                outline: none;
-                border-color: #2c5aa0;
-                box-shadow: 0 0 0 2px rgba(44, 90, 160, 0.2);
-            }
-            
-            .basemap-info {
-                font-size: 0.8rem;
-                color: #666;
-                margin-top: 0.3rem;
-                font-style: italic;
-            }
-        `;
-        document.head.appendChild(style);
+        // Ajouter les styles CSS directement
+        if (!document.getElementById('basemap-compact-styles')) {
+            const style = document.createElement('style');
+            style.id = 'basemap-compact-styles';
+            style.textContent = `
+                .basemap-selector-compact {
+                    padding: 0.8rem;
+                    background: #f8f9fa;
+                    border-radius: 6px;
+                    border: 1px solid #e9ecef;
+                }
+                
+                .basemap-selector-compact label {
+                    display: block;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    margin-bottom: 0.5rem;
+                    color: #2c5aa0;
+                }
+                
+                .basemap-dropdown {
+                    width: 100%;
+                    padding: 0.5rem;
+                    border: 1px solid #ced4da;
+                    border-radius: 4px;
+                    font-size: 0.9rem;
+                    background: white;
+                    cursor: pointer;
+                    transition: border-color 0.2s ease;
+                }
+                
+                .basemap-dropdown:focus {
+                    outline: none;
+                    border-color: #2c5aa0;
+                    box-shadow: 0 0 0 2px rgba(44, 90, 160, 0.2);
+                }
+                
+                .basemap-dropdown:hover {
+                    border-color: #adb5bd;
+                }
+                
+                .basemap-info {
+                    font-size: 0.8rem;
+                    color: #6c757d;
+                    margin-top: 0.4rem;
+                    font-style: italic;
+                    line-height: 1.3;
+                }
+            `;
+            document.head.appendChild(style);
+        }
         
         // Gérer le changement de fond de carte
         const selectElement = document.getElementById('basemap-select');
         const infoElement = document.getElementById('basemap-info');
         
-        selectElement.addEventListener('change', function() {
-            const selectedBasemap = this.value;
-            const selectedInfo = basemaps.find(bm => bm.id === selectedBasemap);
-            
-            // Changer le fond de carte
-            map.basemap = selectedBasemap;
-            
-            // Mettre à jour l'info
-            if (selectedInfo && infoElement) {
-                infoElement.textContent = selectedInfo.description;
-            }
-            
-            showStatus(`Fond de carte changé: ${selectedInfo ? selectedInfo.name : selectedBasemap}`, 'info');
-        });
+        if (selectElement) {
+            selectElement.addEventListener('change', function() {
+                const selectedBasemap = this.value;
+                const selectedInfo = basemaps.find(bm => bm.id === selectedBasemap);
+                
+                // Changer le fond de carte
+                if (map) {
+                    map.basemap = selectedBasemap;
+                }
+                
+                // Mettre à jour l'info
+                if (selectedInfo && infoElement) {
+                    infoElement.textContent = selectedInfo.description;
+                }
+                
+                showStatus(`Fond de carte: ${selectedInfo ? selectedInfo.name : selectedBasemap}`, 'info');
+            });
+        }
         
         console.log('✅ Sélecteur de fond de carte compact créé');
         
     } catch (error) {
         handleError(error, 'Création du sélecteur de fond de carte');
     }
-}
-
-/**
- * Alternative: Créer un toggle simple entre 2 cartes principales
- */
-function createBasemapToggle() {
-    require([
-        'esri/widgets/BasemapToggle'
-    ], function(BasemapToggle) {
-        
-        try {
-            basemapToggle = new BasemapToggle({
-                view: view,
-                nextBasemap: 'hybrid', // Alterne entre satellite et hybride
-                container: 'basemap-gallery'
-            });
-            
-            console.log('✅ Toggle de fond de carte créé');
-            
-        } catch (error) {
-            handleError(error, 'Création du toggle de fond de carte');
-        }
-    });
 }
 
 /**
@@ -168,9 +184,16 @@ function createLayerList() {
     ], function(LayerList) {
         
         try {
+            // Vérifier que le conteneur existe
+            const container = document.getElementById('layer-list');
+            if (!container) {
+                console.warn('⚠️ Conteneur layer-list non trouvé');
+                return;
+            }
+            
             layerList = new LayerList({
                 view: view,
-                container: 'layer-list',
+                container: container,
                 listItemCreatedFunction: function(event) {
                     const item = event.item;
                     
@@ -226,9 +249,15 @@ function createScaleBar() {
     ], function(ScaleBar) {
         
         try {
+            const container = document.getElementById('scale-bar');
+            if (!container) {
+                console.warn('⚠️ Conteneur scale-bar non trouvé');
+                return;
+            }
+            
             scaleBar = new ScaleBar({
                 view: view,
-                container: 'scale-bar',
+                container: container,
                 unit: 'metric'
             });
             
