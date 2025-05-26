@@ -1,0 +1,59 @@
+# Fichiers de données locaux
+data/*.shp
+data/*.dbf
+data/*.shx
+data/*.prj
+data/*.cpg
+data/*.csv
+data/*.geojson
+data/*.tif
+data/*.hdf
+
+# Fichiers de configuration sensibles
+*.env
+config/secrets.js
+
+# Logs
+*.log
+logs/
+
+# Fichiers temporaires
+*.tmp
+*.temp
+temp/
+
+# Fichiers IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Node modules (si ajout de Node.js)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archives
+*.zip
+*.rar
+*.7z
+*.tar.gz
+
+# Documentation générée
+docs/rapport-final.pdf
+docs/presentation.pptx
+
+# Backup files
+*.bak
+*.backup
+*~
