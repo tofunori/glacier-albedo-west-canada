@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Albédo des Glaciers - Ouest Canadien</title>
+    
+    <!-- ArcGIS API pour JavaScript -->
+    <link rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.29/"></script>
+    
+    <!-- Styles personnalisés -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- En-tête avec titre -->
+        <header id="header">
+            <h1>Variation de l'Albédo des Glaciers de l'Ouest Canadien (2014-2024)</h1>
+            <p class="subtitle">Données MODIS et Inventaire RGI - Projet GEO1137 UQTR</p>
+        </header>
+
+        <!-- Interface principale -->
+        <main id="main-content">
+            <!-- Conteneur de la carte -->
+            <div id="map-container">
+                <div id="viewDiv"></div>
+                
+                <!-- Échelle de la carte -->
+                <div id="scale-bar"></div>
+            </div>
+
+            <!-- Panneau des contrôles -->
+            <aside id="controls-panel">
+                <!-- Widget choix de fond de carte -->
+                <div id="basemap-widget" class="widget-container">
+                    <h3>Fond de carte</h3>
+                    <div id="basemap-gallery"></div>
+                </div>
+
+                <!-- Widget contrôle des couches -->
+                <div id="layers-widget" class="widget-container">
+                    <h3>Couches</h3>
+                    <div id="layer-list"></div>
+                </div>
+
+                <!-- Widget de requêtes -->
+                <div id="query-widget" class="widget-container">
+                    <h3>Requêtes SQL</h3>
+                    <div id="query-controls">
+                        <label for="albedo-range">Plage d'albédo :</label>
+                        <input type="range" id="albedo-range" min="0" max="1" step="0.01" value="0.5">
+                        <span id="albedo-value">0.50</span>
+                        
+                        <label for="year-select">Année :</label>
+                        <select id="year-select">
+                            <option value="all">Toutes les années</option>
+                            <option value="2014">2014</option>
+                            <option value="2015">2015</option>
+                            <option value="2016">2016</option>
+                            <option value="2017">2017</option>
+                            <option value="2018">2018</option>
+                            <option value="2019">2019</option>
+                            <option value="2020">2020</option>
+                            <option value="2021">2021</option>
+                            <option value="2022">2022</option>
+                            <option value="2023">2023</option>
+                            <option value="2024">2024</option>
+                        </select>
+                        
+                        <button id="apply-query">Appliquer la requête</button>
+                        <button id="clear-query">Effacer</button>
+                    </div>
+                </div>
+
+                <!-- Bouton retour vue initiale -->
+                <div id="navigation-widget" class="widget-container">
+                    <button id="home-button" class="btn-primary">🏠 Vue initiale</button>
+                    <button id="locate-button" class="btn-secondary">📍 Me localiser</button>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Pied de page -->
+        <footer id="footer">
+            <p>&copy; 2025 - [Votre nom] - Projet GEO1137 UQTR</p>
+        </footer>
+    </div>
+
+    <!-- Scripts JavaScript -->
+    <script src="js/map.js"></script>
+    <script src="js/widgets.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
