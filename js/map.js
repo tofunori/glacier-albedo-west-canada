@@ -59,84 +59,105 @@ function addDataLayers() {
     ], function(FeatureLayer, GraphicsLayer, SimpleRenderer, PopupTemplate) {
         
         try {
-            // Couche des glaciers (polygones RGI) avec popup générique
-            glacierLayer = new FeatureLayer({
-                url: CONFIG.services.glaciers,
-                title: 'Glaciers de l\'Ouest Canadien (RGI v7.0)',
-                renderer: new SimpleRenderer({
-                    symbol: {
-                        type: 'simple-fill',
-                        color: [173, 216, 230, 0.8], // Bleu glacier plus opaque
-                        outline: {
-                            color: [65, 105, 225, 1],
-                            width: 2 // Contour plus épais
-                        }
-                    }
-                }),
-                popupTemplate: new PopupTemplate({
-                    title: 'Glacier RGI',
-                    content: function(feature) {
-                        // Popup générique qui marche avec tous les champs
-                        const attrs = feature.graphic.attributes;
-                        let content = '<div class="popup-content">';
-                        
-                        // Afficher tous les attributs disponibles
-                        for (let field in attrs) {
-                            if (attrs[field] !== null && attrs[field] !== undefined && attrs[field] !== '') {
-                                content += `<p><strong>${field}:</strong> ${attrs[field]}</p>`;
-                            }
-                        }
-                        
-                        content += '</div>';
-                        return content;
-                    }
-                }),
-                visible: true,
-                opacity: 1.0, // Opacité maximale
-                minScale: 50000000, // Visible même de très loin
-                maxScale: 0
-            });
-            
             // Couche pour la localisation de l'utilisateur
             userLocationLayer = new GraphicsLayer({
                 title: 'Ma localisation',
                 visible: true
             });
             
-            // Ajouter seulement les glaciers pour l'instant
-            map.addMany([glacierLayer, userLocationLayer]);
+            // Ajouter d'abord la couche utilisateur
+            map.add(userLocationLayer);
             
-            // Messages de debug détaillés
-            glacierLayer.when(() => {
-                console.log('✅ Couche glaciers chargée avec succès');
-                showStatus('Glaciers RGI chargés avec succès!', 'success');
-                
-                // Obtenir des infos sur la couche
-                glacierLayer.queryExtent().then(function(response) {
-                    console.log('📊 Étendue des glaciers:', response.extent);
-                    console.log('📊 Nombre d\'entités estimées:', response.count);
+            // Vérifier si l'URL des glaciers est disponible
+            if (CONFIG.services.glaciers) {
+                // Couche des glaciers (polygones RGI) avec popup générique
+                glacierLayer = new FeatureLayer({
+                    url: CONFIG.services.glaciers,
+                    title: 'Glaciers de l\'Ouest Canadien (RGI v7.0)',
+                    renderer: new SimpleRenderer({
+                        symbol: {
+                            type: 'simple-fill',
+                            color: [173, 216, 230, 0.8], // Bleu glacier plus opaque
+                            outline: {
+                                color: [65, 105, 225, 1],
+                                width: 2 // Contour plus épais
+                            }
+                        }
+                    }),
+                    popupTemplate: new PopupTemplate({
+                        title: 'Glacier RGI',
+                        content: function(feature) {
+                            // Popup générique qui marche avec tous les champs
+                            const attrs = feature.graphic.attributes;
+                            let content = '<div class="popup-content">';
+                            
+                            // Afficher tous les attributs disponibles de façon plus lisible
+                            for (let field in attrs) {
+                                if (attrs[field] !== null && attrs[field] !== undefined && attrs[field] !== '') {
+                                    // Améliorer l'affichage des noms de champs
+                                    let displayName = field;
+                                    if (field.toLowerCase().includes('area')) displayName = 'Superficie';
+                                    else if (field.toLowerCase().includes('name')) displayName = 'Nom';
+                                    else if (field.toLowerCase().includes('rgi')) displayName = 'ID RGI';
+                                    else if (field.toLowerCase().includes('zmed')) displayName = 'Altitude médiane';
+                                    else if (field.toLowerCase().includes('region')) displayName = 'Région';
+                                    
+                                    content += `<p><strong>${displayName}:</strong> ${attrs[field]}</p>`;
+                                }
+                            }
+                            
+                            content += '</div>';
+                            return content;
+                        }
+                    }),
+                    visible: true,
+                    opacity: 1.0,
+                    minScale: 50000000,
+                    maxScale: 0
                 });
                 
-                // Tester une requête simple
-                glacierLayer.queryFeatures({
-                    where: '1=1',
-                    returnGeometry: true,
-                    outFields: ['*'],
-                    num: 5
-                }).then(function(response) {
-                    console.log('🧪 Test de requête - Entités trouvées:', response.features.length);
-                    if (response.features.length > 0) {
-                        console.log('🧪 Premier glacier:', response.features[0].attributes);
-                        console.log('🧪 Champs disponibles:', Object.keys(response.features[0].attributes));
-                    }
+                // Ajouter la couche des glaciers
+                map.add(glacierLayer);
+                
+                // Messages de debug détaillés
+                glacierLayer.when(() => {
+                    console.log('✅ Couche glaciers chargée avec succès');
+                    showStatus('Glaciers RGI chargés avec succès!', 'success');
+                    
+                    // Obtenir des infos sur la couche
+                    glacierLayer.queryExtent().then(function(response) {
+                        console.log('📊 Étendue des glaciers:', response.extent);
+                        console.log('📊 Nombre d\'entités estimées:', response.count);
+                        showStatus(`${response.count} glaciers détectés`, 'info');
+                    });
+                    
+                    // Tester une requête simple
+                    glacierLayer.queryFeatures({
+                        where: '1=1',
+                        returnGeometry: true,
+                        outFields: ['*'],
+                        num: 5
+                    }).then(function(response) {
+                        console.log('🧪 Test de requête - Entités trouvées:', response.features.length);
+                        if (response.features.length > 0) {
+                            console.log('🧪 Premier glacier:', response.features[0].attributes);
+                            console.log('🧪 Champs disponibles:', Object.keys(response.features[0].attributes));
+                        }
+                    });
+                    
+                }).catch(error => {
+                    console.error('❌ Erreur chargement glaciers:', error);
+                    handleError(error, 'Chargement des glaciers RGI');
                 });
                 
-            }).catch(error => {
-                console.error('❌ Erreur chargement glaciers:', error);
-                handleError(error, 'Chargement des glaciers RGI');
-            });
+                showStatus('Couche des glaciers ajoutée', 'success');
+            } else {
+                console.warn('⚠️ URL du service glaciers non configurée');
+                showStatus('Service glaciers non configuré', 'warning');
+            }
             
-            showStatus('Couche des glaciers ajoutée', 'success');
+            // Ne pas charger l'albédo pour l'instant
+            console.log('ℹ️ Service d\'albédo sera ajouté après publication');
             
         } catch (error) {
             handleError(error, 'Ajout des couches de données');
@@ -148,6 +169,11 @@ function addDataLayers() {
  * Ajouter la couche d'albédo (à appeler après publication du service)
  */
 function addAlbedoLayer() {
+    if (!CONFIG.services.albedoPoints) {
+        console.warn('⚠️ URL du service d\'albédo non configurée');
+        return;
+    }
+
     require([
         'esri/layers/FeatureLayer',
         'esri/renderers/SimpleRenderer',
